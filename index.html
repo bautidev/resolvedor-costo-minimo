@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resolvedor de problemas del transporte - Costo Mínimo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <h1>Resolvedor de problemas del transporte</h1>
+    <p>Método Costo Mínimo</p>
+  </header>
+
+  <div class="card">
+    <div class="card-label">Cantidad de Orígenes y Destinos</div>
+    <div class="dim-row">
+      <label>Orígenes <input type="number" id="numOrigines" min="1" max="10" value="3"></label>
+      <label>Destinos  <input type="number" id="numDestinos" min="1" max="10" value="3"></label>
+      <button class="btn btn-primary" onclick="generarFormulario()">Generar tabla</button>
+    </div>
+    <div id="errDim" class="msg-error"></div>
+  </div>
+
+  <div id="seccionNodos" class="hidden">
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-label">Orígenes — Oferta</div>
+        <table class="nodes-table" id="tablaOrigenes"></table>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Destinos — Demanda</div>
+        <table class="nodes-table" id="tablaDestinos"></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Costos unitarios ($)</div>
+      <div style="overflow-x: auto;">
+        <table id="costMatrix"></table>
+      </div>
+      <div id="errCalc"  class="msg-error"></div>
+      <div id="warnCalc" class="msg-warn"></div>
+      <div class="actions-row">
+        <button class="btn btn-calc" onclick="ejecutarProceso()">Calcular solución</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="resultado" class="hidden">
+
+    <div class="card">
+      <div class="card-label">Matriz de asignación</div>
+      <div style="overflow-x: auto;">
+        <table class="res-table" id="tablaResultado"></table>
+      </div>
+      <div class="z-box">
+        <span class="z-label">Solución Inicial</span>
+        <span class="z-value" id="zValue"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Rutas asignadas</div>
+      <div id="listaAsig"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
