@@ -9,9 +9,19 @@ function formatearCosto(numero) {
   return '$' + numero.toFixed(2);
 }
 
+function escapeHTML(texto) {
+  const div = document.createElement('div');
+  div.textContent = texto;
+  return div.innerHTML;
+}
+
+function leerNumeroNoNegativo(valor) {
+  return Math.max(0, parseFloat(valor) || 0);
+}
+
 function generarFormulario() {
-  const cantidadOrigenes = parseInt(document.getElementById('numOrigines').value);
-  const cantidadDestinos = parseInt(document.getElementById('numDestinos').value);
+  const cantidadOrigenes = parseInt(document.getElementById('numOrigines').value, 10);
+  const cantidadDestinos = parseInt(document.getElementById('numDestinos').value, 10);
   const mensajeError = document.getElementById('errDim');
 
   if (isNaN(cantidadOrigenes) || cantidadOrigenes < 1 || isNaN(cantidadDestinos) || cantidadDestinos < 1) {
@@ -24,55 +34,50 @@ function generarFormulario() {
   nombresOrigenes = Array.from({ length: cantidadOrigenes }, (_, i) => `O${i + 1}`);
   nombresDestinos = Array.from({ length: cantidadDestinos }, (_, j) => `D${j + 1}`);
 
-  renderTablaOrigenes(cantidadOrigenes);
-  renderTablaDestinos(cantidadDestinos);
+  renderTablaNodos({
+    tablaId: 'tablaOrigenes',
+    cantidad: cantidadOrigenes,
+    prefijo: 'O',
+    labelColumna: 'Oferta',
+    claseNombre: 'nombre-origen',
+    claseValor: 'valor-oferta',
+    nombres: nombresOrigenes
+  });
+
+  renderTablaNodos({
+    tablaId: 'tablaDestinos',
+    cantidad: cantidadDestinos,
+    prefijo: 'D',
+    labelColumna: 'Demanda',
+    claseNombre: 'nombre-destino',
+    claseValor: 'valor-demanda',
+    nombres: nombresDestinos
+  });
+
   renderCostMatrix(cantidadOrigenes, cantidadDestinos);
 
   document.getElementById('seccionNodos').classList.remove('hidden');
   document.getElementById('resultado').classList.add('hidden');
 }
 
-function renderTablaOrigenes(cantidadOrigenes) {
-  const tablaOrigenes = document.getElementById('tablaOrigenes');
-  let html = '<tr><th>Nombre</th><th>Oferta</th></tr>';
+function renderTablaNodos({ tablaId, cantidad, prefijo, labelColumna, claseNombre, claseValor, nombres }) {
+  const tabla = document.getElementById(tablaId);
+  let html = `<tr><th>Nombre</th><th>${labelColumna}</th></tr>`;
 
-  for (let i = 0; i < cantidadOrigenes; i++) {
+  for (let i = 0; i < cantidad; i++) {
     html += `
       <tr>
-        <td><input type="text" class="nombre-origen" data-index="${i}" value="O${i + 1}"></td>
-        <td><input type="number" class="valor-oferta" min="0" placeholder="0"></td>
+        <td><input type="text" class="${claseNombre}" data-index="${i}" value="${prefijo}${i + 1}"></td>
+        <td><input type="number" class="${claseValor}" min="0" placeholder="0"></td>
       </tr>`;
   }
 
-  tablaOrigenes.innerHTML = html;
+  tabla.innerHTML = html;
 
-  tablaOrigenes.querySelectorAll('.nombre-origen').forEach(input => {
+  tabla.querySelectorAll(`.${claseNombre}`).forEach(input => {
     input.addEventListener('input', function () {
-      const idx = parseInt(this.dataset.index);
-      nombresOrigenes[idx] = this.value || `O${idx + 1}`;
-      refreshHeaders();
-    });
-  });
-}
-
-function renderTablaDestinos(cantidadDestinos) {
-  const tablaDestinos = document.getElementById('tablaDestinos');
-  let html = '<tr><th>Nombre</th><th>Demanda</th></tr>';
-
-  for (let j = 0; j < cantidadDestinos; j++) {
-    html += `
-      <tr>
-        <td><input type="text" class="nombre-destino" data-index="${j}" value="D${j + 1}"></td>
-        <td><input type="number" class="valor-demanda" min="0" placeholder="0"></td>
-      </tr>`;
-  }
-
-  tablaDestinos.innerHTML = html;
-
-  tablaDestinos.querySelectorAll('.nombre-destino').forEach(input => {
-    input.addEventListener('input', function () {
-      const idx = parseInt(this.dataset.index);
-      nombresDestinos[idx] = this.value || `D${idx + 1}`;
+      const idx = parseInt(this.dataset.index, 10);
+      nombres[idx] = this.value || `${prefijo}${idx + 1}`;
       refreshHeaders();
     });
   });
@@ -83,12 +88,12 @@ function renderCostMatrix(cantidadOrigenes, cantidadDestinos) {
 
   let html = '<thead><tr><th></th>';
   for (let j = 0; j < cantidadDestinos; j++) {
-    html += `<th class="h-dest">${nombresDestinos[j]}</th>`;
+    html += `<th class="h-dest">${escapeHTML(nombresDestinos[j])}</th>`;
   }
   html += '</tr></thead><tbody>';
 
   for (let i = 0; i < cantidadOrigenes; i++) {
-    html += `<tr><td class="row-lbl r-orig">${nombresOrigenes[i]}</td>`;
+    html += `<tr><td class="row-lbl r-orig">${escapeHTML(nombresOrigenes[i])}</td>`;
     for (let j = 0; j < cantidadDestinos; j++) {
       html += `<td><input type="number" class="costo-celda" data-row="${i}" data-col="${j}" min="0" step="0.01"></td>`;
     }
@@ -110,17 +115,19 @@ function refreshHeaders() {
 function ejecutarProceso() {
   let origenes = Array.from(document.querySelectorAll('.valor-oferta')).map((input, i) => ({
     nombre: nombresOrigenes[i],
-    oferta: parseFloat(input.value) || 0
+    oferta: leerNumeroNoNegativo(input.value)
   }));
 
   let destinos = Array.from(document.querySelectorAll('.valor-demanda')).map((input, j) => ({
     nombre: nombresDestinos[j],
-    demanda: parseFloat(input.value) || 0
+    demanda: leerNumeroNoNegativo(input.value)
   }));
 
   let costos = Array.from({ length: origenes.length }, () => Array(destinos.length).fill(0));
   document.querySelectorAll('.costo-celda').forEach(input => {
-    costos[parseInt(input.dataset.row)][parseInt(input.dataset.col)] = parseFloat(input.value) || 0;
+    const fila = parseInt(input.dataset.row, 10);
+    const col = parseInt(input.dataset.col, 10);
+    costos[fila][col] = leerNumeroNoNegativo(input.value);
   });
 
   const totalOferta = origenes.reduce((acum, origen) => acum + origen.oferta, 0);
@@ -196,14 +203,14 @@ function ejecutarProceso() {
     <thead>
       <tr>
         <th>Origen \\ Destino</th>
-        ${destinos.map(destino => `<th>${destino.nombre}</th>`).join('')}
+        ${destinos.map(destino => `<th>${escapeHTML(destino.nombre)}</th>`).join('')}
         <th>Oferta</th>
       </tr>
     </thead>
     <tbody>`;
 
   for (let fila = 0; fila < origenes.length; fila++) {
-    htmlResultado += `<tr><td class="row-head">${origenes[fila].nombre}</td>`;
+    htmlResultado += `<tr><td class="row-head">${escapeHTML(origenes[fila].nombre)}</td>`;
 
     for (let col = 0; col < destinos.length; col++) {
       const asignacion = asignaciones.find(a => a.fila === fila && a.col === col);
@@ -238,9 +245,9 @@ function ejecutarProceso() {
     .map(asignacion => `
       <div class="asig-item">
         <div class="asig-route">
-          <strong>${origenes[asignacion.fila].nombre}</strong>
+          <strong>${escapeHTML(origenes[asignacion.fila].nombre)}</strong>
           <span class="arrow">→</span>
-          <strong>${destinos[asignacion.col].nombre}</strong>
+          <strong>${escapeHTML(destinos[asignacion.col].nombre)}</strong>
         </div>
         <span class="asig-cost">${formatearNumero(asignacion.cantidad)} × ${formatearCosto(asignacion.costo)} = ${formatearCosto(asignacion.cantidad * asignacion.costo)}</span>
       </div>`)
