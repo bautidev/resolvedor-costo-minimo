@@ -1,5 +1,6 @@
 let nombresOrigenes = [];
 let nombresDestinos = [];
+let ultimoResultado = null;
 
 function formatearNumero(numero) {
   return Number.isInteger(numero) ? numero.toString() : numero.toFixed(2);
@@ -240,6 +241,8 @@ function ejecutarProceso() {
   document.getElementById('tablaResultado').innerHTML = htmlResultado;
   document.getElementById('zValue').textContent = formatearCosto(costoTotal);
 
+  ultimoResultado = { origenes, destinos, costos, asignaciones, costoTotal, totalOferta, totalDemanda };
+
   document.getElementById('listaAsig').innerHTML = asignaciones
     .filter(asignacion => asignacion.cantidad > 0)
     .map(asignacion => `
@@ -256,4 +259,50 @@ function ejecutarProceso() {
   const seccionResultado = document.getElementById('resultado');
   seccionResultado.classList.remove('hidden');
   seccionResultado.scrollIntoView({ behavior: 'smooth' });
+}
+
+function escaparCampoCSV(valor) {
+  const texto = String(valor ?? '');
+  if (texto.includes(',') || texto.includes('"') || texto.includes('\n')) {
+    return '"' + texto.replace(/"/g, '""') + '"';
+  }
+  return texto;
+}
+
+function filasATextoCSV(filas) {
+  return filas.map(fila => fila.map(escaparCampoCSV).join(',')).join('\r\n');
+}
+
+function descargarCSV(contenido, nombreArchivo) {
+  const blob = new Blob(['\uFEFF' + contenido], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = nombreArchivo;
+  document.body.appendChild(enlace);
+  enlace.click();
+  document.body.removeChild(enlace);
+  URL.revokeObjectURL(url);
+}
+
+function exportarCSV() {
+  if (!ultimoResultado) return;
+
+  const { origenes, destinos, costos, asignaciones, totalOferta, totalDemanda } = ultimoResultado;
+  const filas = [];
+
+  filas.push(['Origen \\ Destino', ...destinos.map(destino => destino.nombre), 'Oferta']);
+  origenes.forEach((origen, i) => {
+    const fila = [origen.nombre];
+    destinos.forEach((destino, j) => {
+      const asignacion = asignaciones.find(a => a.fila === i && a.col === j);
+      const cantidad = asignacion ? asignacion.cantidad : 0;
+      fila.push(`${formatearNumero(cantidad)} | ${formatearCosto(costos[i][j])}`);
+    });
+    fila.push(formatearNumero(origen.oferta));
+    filas.push(fila);
+  });
+  filas.push(['Demanda', ...destinos.map(destino => formatearNumero(destino.demanda)), formatearNumero(Math.max(totalOferta, totalDemanda))]);
+
+  descargarCSV(filasATextoCSV(filas), 'solucion_costo_minimo.csv');
 }

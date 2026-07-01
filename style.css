@@ -162,6 +162,37 @@ input:focus {
   color: var(--bg-void);
 }
 
+.btn-outline {
+  background: transparent;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border-line);
+}
+
+.btn-outline:hover {
+  color: var(--cyan-bright);
+  border-bottom-color: var(--cyan-bright);
+  background: var(--cyan-dim);
+}
+
+.btn .material-symbols-outlined {
+  font-size: 1.2em;
+  vertical-align: -4px;
+  margin-right: 8px;
+}
+
+.final-actions {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-line);
+}
+
+.final-actions .btn {
+  flex: 1 1 220px;
+}
+
 .dim-row {
   display: flex;
   align-items: center;
